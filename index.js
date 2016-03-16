@@ -1,23 +1,78 @@
+var Q = require('q');
+var request = require('request');
 var id = 'summit-view-github';
-var config, settings, summit, commits = [];
+var config, settings, summit, commits = [], users = {};
+
+var getAvatarUrl = function(username) {
+    if( users[username] ) {
+        ret = users[username].avatar_url;
+    }
+    else {
+        var deferred = Q.defer();
+
+        request({ url: 'https://api.github.com/users/' + username, headers: { 'User-Agent': id } }, function(err, res, body) {
+            if (!err && res.statusCode == 200) {
+                var user = JSON.parse(body);
+                users[username] = user;
+                deferred.resolve(user.avatar_url);
+            }
+            else {
+                deferred.reject(new Error(err));
+            }
+        });
+
+        ret = deferred.promise;
+    }
+
+    return Q.when(ret);
+};
 
 module.exports = function(s) {
     summit = s;
     config = config || {};
 
+    // setup webhook listener
     summit.router.post('/payload', function(req, res) {
+        res.status(200).send(); // answer back to github instantly
+
         var data = req.body;
 
-        console.log('got some data at /payload');
-        console.log(data);
+        Q.resolve()
+            .then(function() {
+                var newCommits = data.commits.map(function(c) {
+                    return Q.resolve()
+                        .then(function() {
+                            return getAvatarUrl(c.committer.username);
+                        })
+                        .then(function(avatar_url) {
+                            return {
+                                repository: data.repository.full_name,
+                                message: c.message,
+                                timestamp: c.timestamp,
+                                committer: c.committer,
+                                avatar_url: avatar_url,
+                            };
+                        })
+                });
 
-        res.status(200).send();
+                return Q.all(newCommits);
+            })
+            .then(function(cs) {
+                for (var i = 0; i < cs.length; i++) {
+                    if( commits.length >= config.cacheLength || 15 ) {
+                        commits.shift();
+                    }
+                    commits.push(cs[i]);
 
+                    // emit the commit
+                    summit.io.emit('commit', cs[i]);
+                }
+            });
     });
 
-    // emit the profiles on new connection
-    summit.io.on('connection', function() {
-        summit.io.emit('commits', commits);
+    // emit cached commits on new connection
+    summit.io.on('connection', function(socket) {
+        socket.emit('commits', commits);
     });
 
 
