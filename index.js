@@ -5,6 +5,16 @@ module.exports = function(s) {
     summit = s;
     config = config || {};
 
+    summit.router.post('/payload', function(req, res) {
+        var data = req.body;
+
+        console.log('got some data at /payload');
+        console.log(data);
+
+        res.status(200).send();
+
+    });
+
     // emit the profiles on new connection
     summit.io.on('connection', function() {
         summit.io.emit('commits', commits);
