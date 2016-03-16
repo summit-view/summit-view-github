@@ -58,8 +58,10 @@ module.exports = function(s) {
                 return Q.all(newCommits);
             })
             .then(function(cs) {
+                var cacheLength = config.cacheLength || 15;
+
                 for (var i = 0; i < cs.length; i++) {
-                    if( commits.length >= config.cacheLength || 15 ) {
+                    if( commits.length >= cacheLength ) {
                         commits.shift();
                     }
                     commits.push(cs[i]);
