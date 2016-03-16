@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/summit-view/summit-view-github/issues"
   },
-  "homepage": "https://github.com/summit-view/summit-view-github#readme"
+  "homepage": "https://github.com/summit-view/summit-view-github#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-stylus": "^2.3.1"
+  }
 }
