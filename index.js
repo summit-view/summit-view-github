@@ -69,12 +69,23 @@ module.exports = function(s) {
                     // emit the commit
                     summit.io.emit('commit', cs[i]);
                 }
+
+                if( commits.length ) {
+                    summit.io.emit('loaded');
+                }
             });
     });
 
     // emit cached commits on new connection
     summit.io.on('connection', function(socket) {
         socket.emit('commits', commits);
+
+        if( commits.length ) {
+            socket.emit('loaded');
+        }
+        else {
+            socket.emit('loading', 'Waiting for first commit...');
+        }
     });
 
 
@@ -84,6 +95,16 @@ module.exports = function(s) {
 
             return {
                 id: id,
+                branding: {
+                    icon: {
+                        fa: 'github',
+                    },
+                    color: {
+                        background: 'github-4',
+                        text: 'clouds',
+                        icon: 'clouds',
+                    }
+                },
             };
         });
 
